@@ -128,7 +128,7 @@ def k_folds_gen(k: int, file_name: str):
     else:
         print("ERROR!!!!!!!")
 
-    return k_folds
+    return k_folds, deepcopy(data_set[0])
 
     # populate the folds according to the original data set's class proportions
     # ok to do this in a randomized fashion?

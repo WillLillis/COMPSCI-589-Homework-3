@@ -4,7 +4,7 @@ import misc
 
 class random_forest:
     # Add various tree params as forest params...
-    def __init__(self, data: list, num_trees: int):
+    def __init__(self, data: list, num_trees: int, stopping_criteria = "minimal_gain_criterion"):
         # list containing all trees that are members of the forest
         self.trees = []
         # helper dictionary to translate between category labels and (column) indices
@@ -12,9 +12,22 @@ class random_forest:
         for index in range(len(data[0])):
             self.cat_to_attr_index[data[0][index]] = index
 
+        # helper 2-D list to hold all possible values for given categorical attributes
+        self.attr_vals = {}
+        for index in range(len(data[0]) - 1): # -1 to avoid copying the "target" attribute
+            print(f"Adding entry to attr_vals: {data[0][index]}")
+            self.attr_vals[data[0][index]] = list() 
+        # iterate through data set and collect all possible values for each attribute
+        for attr in self.attr_vals:
+            for index in range(1, len(data)): # start at 1 to avoid the labels in the first row
+                if data[index][self.cat_to_attr_index[attr]] not in self.attr_vals[attr]:
+                    self.attr_vals[attr].append(data[index][self.cat_to_attr_index[attr]])
+
+        print(f"attr_vals: {self.attr_vals}")
+
         for _ in range(num_trees):
             tree_data = misc.bootstrap(data)
-            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None, '', is_root=True, split_metric="Gini"))
+            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None, stopping_criteria, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
 
     def classify_instance(self, instance: list):
         votes = {}
@@ -24,6 +37,15 @@ class random_forest:
             if vote in votes:
                 votes[vote] += 1
             else:
-                vote[votes] = 1
+                votes[vote] = 1
         # and return the classification with the most votes
+        print(f"votes: {votes}")
         return max(votes, key = votes.get)
+
+    def recur_print(self, tree_index=-1):
+        if tree_index == -1:
+            for i in range(len(self.trees)):
+                print(f"Tree {i}:")
+                self.trees[i].recursive_print()
+        else:
+            self.trees[tree_index].recursive_print()

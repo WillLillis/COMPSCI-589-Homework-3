@@ -2,16 +2,15 @@ from copy import deepcopy
 import csv
 from random import randrange
 from math import log2
+import random
 from statistics import stdev
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+from math import sqrt
 
 # stopping criteria, can pick one or combine
     # minimal_size_for_split_criterion : data set < n instances, pick n empirically
     # minimal_gain_criterion : stop splitting once info gain is too low, pick threshold empirically
     # maximal_depth_stopping_criterion : stop when some max depth is reached, pick depth empirically
-
-# stopping criteria arg->just use strings for clarity like split_metric?
-
 class decision_tree:
     # data - The dataset passed in to create further nodes with
     # depth - recursive depth in terms of '\t' characters, used for debugging purposes
@@ -19,7 +18,7 @@ class decision_tree:
     #           the initial call, false for the other calls
     # classification - has argument passed in only when the caller is passing it an 
     #                  empty data set, indicates what classification (0 or 1 in the case) to make the resulting leaf node
-    def __init__(self, data, attr_val, depth = '', is_root = False, classification = None, split_metric="Info_Gain", extra_stop=False):
+    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
         self.children = []
         if is_root == True:
             self.attr_val = None 
@@ -32,76 +31,122 @@ class decision_tree:
             self.node_attr = None
             self.classification = classification 
             return
-        # next check if 'data' is homogeneous (all members of dataset belong to same class)
-        homogeneous = True
-        prev = data[1][-1] # first data entry label
-        for index in range(2, len(data)): # data[0] has attribute labels, data[1] is used to initialize 'prev'-> start at index 2
-            if prev != data[index][-1]:
-                homogeneous = False
-                break
-        if homogeneous == True: # if the data set is homogenous, we're done
-            #print(f'{depth}Homogenous! Creating leaf node!')
-            self.is_leaf = True
-            self.node_attr = None
-            self.classification = data[1][-1]
-            return
 
-        # extra credit option here, check if 85%+ instances belong to the same class
-        if extra_stop == True:
-            counts = {}
-            for index in range(1, len(data)): # skip attribute labels in first row
-                if data[index][-1] in counts:
-                    counts[data[index][-1]] += 1
-                else:
-                    counts[data[index][-1]] = 1
-            for item in counts:
-                if counts[item] >= (0.85 * (len(data) - 1)):
-                    self.is_leaf = True
-                    self.node_attr = None
-                    self.classification = item
-                    return
-        
-        # if it's not homogenous...
-        #print(f'{depth}Not homogenous! Continuing...')
         self.is_leaf = False 
         self.classification = None # node isn't a leaf, so it doesn't decide what class a given instance belongs to 
-
         split_attr = None
+
+        # evaluate stopping criteria
+        if stopping_criteria == "minimal_size_for_split_criterion":
+            thresh = 15 # empirical threshold
+            if (len(data) - 1) <= thresh:
+                self.is_leaf = True
+                self.node_attr = None
+                self.classification = get_majority_class(data)
+                return
+            else:
+                self.is_leaf = False
+        elif stopping_criteria == "minimal_gain_criterion":
+             thresh = 0.1 # arbitary threshold
+             info_gains = {} # information gain for each attribute
+             data_set_only_labels = [] # strip off just the class labels (0's and 1's) to calculate entropy/ info gain
+             for index in range(1, len(data)): # skip the first row (attribute labels)
+                 data_set_only_labels.append(deepcopy(data[index][-1]))
+
+             # get random subset of dataset's attributes
+             attributes = get_rand_cats(deepcopy(data[0]))
+             #print(f"Random attributes: {attributes}")
+             for attr in attributes:
+                 partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+                 info_gains[attr] = info_gain(data_set_only_labels, partitions) 
+             # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
+             #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
+             #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
+             #    info_gains[data[0][attr_index]] = info_gain(data_set_only_labels, partitions) 
+             #    #print(f'{depth}information gain of split based off of {data[0][attr_index]} is {info_gains[data[0][attr_index]]}')
+             # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
+             split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
+             if info_gains[split_attr] < thresh:
+                self.is_leaf = True
+                self.node_attr = None
+                self.classification = get_majority_class(data)
+                return
+             else:
+                self.is_leaf = False
+        elif stopping_criteria == "maximal_depth_stopping_criterion":
+            thresh = 10
+            if len(depth) >= thresh:
+                self.is_leaf = True
+                self.node_attr = None
+                self.classification = get_majority_class(data)
+                return
+            else:
+                self.is_leaf = False
+        else:
+            print(f"Error! Invalid stopping criteria argument provided! ({stopping_criteria})")
+        
+
+        # if it doesn't meet the stopping criteria...
+        #print(f'{depth}Stopping crieria not met! Continuing...')
+        
+
+        
         # find best attribute to split off of based off of Information Gain/ Gini Metric
         if split_metric == "Info_Gain":
-            info_gains = {} # information gain for each attribute
-            data_set_only_labels = [] # strip off just the class labels (0's and 1's) to calculate entropy/ info gain
-            for index in range(1, len(data)): # skip the first row (attribute labels)
-                data_set_only_labels.append(deepcopy(data[index][-1]))
+            # if we're using minimal gain as our stopping criteria, everything should already be calculated!
+            if stopping_criteria == "minimal_gain_criterion": 
+                pass
+            # otherwise calculate info gain as normal
+            else:
+                info_gains = {} # information gain for each attribute
+                data_set_only_labels = [] # strip off just the class labels (0's and 1's) to calculate entropy/ info gain
+                for index in range(1, len(data)): # skip the first row (attribute labels)
+                    data_set_only_labels.append(deepcopy(data[index][-1]))
 
-            for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
-                partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
-                info_gains[data[0][attr_index]] = info_gain(data_set_only_labels, partitions) 
-                #print(f'{depth}information gain of split based off of {data[0][attr_index]} is {info_gains[data[0][attr_index]]}')
-            split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
-            #print(f'{depth}Splitting based off of attribute {split_attr}, gain: {info_gains[split_attr]}')
+                # get random subset of dataset's attributes
+                attributes = get_rand_cats(deepcopy(data[0]))
+                for attr in attributes:
+                    partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+                    info_gains[attr] = info_gain(data_set_only_labels, partitions) 
+                # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
+                #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
+                #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
+                #    info_gains[data[0][attr_index]] = info_gain(data_set_only_labels, partitions) 
+                #    #print(f'{depth}information gain of split based off of {data[0][attr_index]} is {info_gains[data[0][attr_index]]}')
+                # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
+                split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
+                #print(f'{depth}Splitting based off of attribute {split_attr}, gain: {info_gains[split_attr]}')
         elif split_metric == "Gini":
             ginis = {}
             data_set_only_labels = []
             for index in range(1, len(data)): # skip the first row (attribute labels)
                 data_set_only_labels.append(deepcopy(data[index][-1]))
 
-            for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
-                partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
-                ginis[data[0][attr_index]] = 0
-                for partition in partitions:
-                    ginis[data[0][attr_index]] += (len(partition) / len(data)) * gini_criterion(partition)
-                #print(f'{depth}gini criterion of split based off of {data[0][attr_index]} is {ginis[data[0][attr_index]]}')
+            # get random subset of dataset's attributes
+            attributes = get_rand_cats(deepcopy(data[0]))
+            for attr in attributes:
+                partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+            # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
+            #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
+            #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
+            #    ginis[data[0][attr_index]] = 0
+            #    for partition in partitions:
+            #        ginis[data[0][attr_index]] += (len(partition) / len(data)) * gini_criterion(partition)
+            #    #print(f'{depth}gini criterion of split based off of {data[0][attr_index]} is {ginis[data[0][attr_index]]}')
+            # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
             split_attr = min(ginis, key = ginis.get)
         else:
             print("ERROR: Invalid split metric supplied!")
             return
         
-
+        #BUGBUG somehow split_attr is None here
         self.node_attr = split_attr
         # partition data based off of split_attr
-        child_data = partition_data(data, split_attr, labels_only=False)
+        child_data = partition_data(data, split_attr, attr_vals, labels_only=False)
 
+        #BUGUBUG remove hardcoded '3'
+            # figuring out possible number of values for an attribute at runtime
+            # make a dictionary once at the start?
         # calculate dataset majority in case of empty partition
         # hardcoded '3' here is a little dumb, could make this more dynamic
         for i in range(3):
@@ -118,9 +163,9 @@ class decision_tree:
 
         for i in range(3):
             if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
-                self.children.append(decision_tree(child_data[i], i, depth=depth + '\t', split_metric=split_metric, extra_stop=extra_stop))
+                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_vals, depth=depth + '\t', split_metric=split_metric))
             else:
-                self.children.append(decision_tree(child_data[i], i, depth=depth + '\t', classification=majority, split_metric=split_metric, extra_stop=extra_stop))
+                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
     
     # for debugging, conducts a DFS of the tree, printing out its attributes
     def recursive_print(self, depth=''):
@@ -148,16 +193,23 @@ class decision_tree:
 # if labels_only=True-> returns partitions ONLY WITH CLASS LABELS (0's and 1's, that's it)
 # if labels_only=False-> returns the partitions with entire rows from data set copied in
     # in this case, each partition gets a row of attribute labels at the top
-def partition_data(data, attr, labels_only=True):
+# pass in attr to index dict?
+def partition_data(data, attr, attr_vals: dict, labels_only=True):
+    #print(f"attr: {attr}")
+    #print(f"len(attr_vals[attr]): {len(attr_vals[attr])}")
+    
     partitions = [] # creating multi-dimensional arrays in python is weird...
-    partitions.append([])
-    partitions.append([])
-    partitions.append([])
+    for i in range(len(attr_vals[attr])):
+        partitions.append([])
+
+    #print(f"partitions: {partitions}")
+
     for i in range(len(data[0])):
         if data[0][i] == attr:
             attr_index = i
             break
     # going to abuse the fact that the attribute values are 0,1,2 and use them as indices
+        # using value of attribute for index into partition list (array?)
     # if they weren't I could just use a dict to map the value to an index, but that looks messy....
     if labels_only == True:
          for i in range(1, len(data)): # skip the first row
@@ -218,6 +270,39 @@ def gini_criterion(labels):
 
     return 1 - accum
 
+# just needs to return list of attribute labels
+# could also return indices?
+# just pass in the first row of the dataset with the labels AS A DEEPCOPY
+    # this function will destructively modify its `cats` parameter
+# assuming the classification label is included here just for simplicity
+# if num_cats_req is specified, we'll use that number
+# otherwise we'll use the sqrt heuristic
+def get_rand_cats(cats: list, num_cats_req=0):
+    ret_cats = list()
+    num_cats = 0
+    if num_cats_req <= 0:
+        num_cats = max(int(sqrt(len(cats) - 1)), 1)
+    else:
+        num_cats = num_cats_req
+        while num_cats > (len(cats) - 1):
+            num_cats -= 1
+    for _ in range(num_cats):
+        ret_cats.append(cats.pop(random.randrange(len(cats) - 1)))
+    return ret_cats
+
+# for simplicity we'll assume the labels occupy the first row, so we'll ignore that
+def get_majority_class(data: list):
+    if len(data) < 2:
+        print("ERROR: Bad dataset!")
+        return None
+    counts = {}
+    for i in range(1, len(data)):
+        if data[i][-1] in counts:
+            counts[data[i][-1]] += 1
+        else:
+            counts[data[i][-1]] = 1
+    return max(counts, key=counts.get)
+
 # read in the data from the csv and randomly split into training (80%) and test (20%) sets, return these sets
 def prepare_data(file_name: str):
     # load in data
@@ -276,47 +361,48 @@ def prepare_data(file_name: str):
     return training_set, test_set, cat_to_attr_label
 
 def main():
-    test_set_acc = []
-    training_set_acc = []
-    for _ in range(100):
-        training_set, test_set, cat_to_attr_index = prepare_data()
-        tree = decision_tree(training_set, None, '', is_root=True, split_metric="Gini")
-        #tree = decision_tree(training_set, None, '', is_root=True, extra_stop=True)
-        #tree.recursive_print()
-        num_correct = 0
-        for example in test_set:
-            if tree.classify_instance(example, cat_to_attr_index) == example[-1]:
-                num_correct += 1
-        #print(f'Test set score: {num_correct / len(test_set)}')
-        test_set_acc.append(num_correct / len(test_set))
+    pass
+    #test_set_acc = []
+    #training_set_acc = []
+    #for _ in range(100):
+    #    training_set, test_set, cat_to_attr_index = prepare_data()
+    #    tree = decision_tree(training_set, None, '', is_root=True, split_metric="Gini")
+    #    #tree = decision_tree(training_set, None, '', is_root=True, extra_stop=True)
+    #    #tree.recursive_print()
+    #    num_correct = 0
+    #    for example in test_set:
+    #        if tree.classify_instance(example, cat_to_attr_index) == example[-1]:
+    #            num_correct += 1
+    #    #print(f'Test set score: {num_correct / len(test_set)}')
+    #    test_set_acc.append(num_correct / len(test_set))
 
-        num_correct = 0
-        for index in range(1, len(training_set)): # skip the first row (attribute labels)
-            if tree.classify_instance(training_set[index], cat_to_attr_index) == training_set[index][-1]:
-                num_correct += 1
-        #print(f'Training set score: {num_correct / len(training_set)}')
-        training_set_acc.append(num_correct / len(training_set))
+    #    num_correct = 0
+    #    for index in range(1, len(training_set)): # skip the first row (attribute labels)
+    #        if tree.classify_instance(training_set[index], cat_to_attr_index) == training_set[index][-1]:
+    #            num_correct += 1
+    #    #print(f'Training set score: {num_correct / len(training_set)}')
+    #    training_set_acc.append(num_correct / len(training_set))
 
-    print(f'Test set average score: {sum(test_set_acc) / len(test_set_acc)}, stdev: {stdev(test_set_acc)}')
-    print(f'Training set average score: {sum(training_set_acc) / len(training_set_acc)}, stdev: {stdev(training_set_acc)}')
+    #print(f'Test set average score: {sum(test_set_acc) / len(test_set_acc)}, stdev: {stdev(test_set_acc)}')
+    #print(f'Training set average score: {sum(training_set_acc) / len(training_set_acc)}, stdev: {stdev(training_set_acc)}')
 
-    training_plot = plt.figure(1)
-    plt.hist(training_set_acc, 10, ec="k")
-    plt.xlabel("Accuracy (%)")
-    plt.ylabel("Counts/Bin")
-    plt.title("Training Set Accuracy")
-    training_plot.show()
+    #training_plot = plt.figure(1)
+    #plt.hist(training_set_acc, 10, ec="k")
+    #plt.xlabel("Accuracy (%)")
+    #plt.ylabel("Counts/Bin")
+    #plt.title("Training Set Accuracy")
+    #training_plot.show()
 
-    test_plot = plt.figure(2)
-    plt.hist(test_set_acc, 10, ec="k")
-    plt.xlabel("Accuracy (%)")
-    plt.ylabel("Counts/Bin")
-    plt.title("Test Set Accuracy")
-    test_plot.show()
+    #test_plot = plt.figure(2)
+    #plt.hist(test_set_acc, 10, ec="k")
+    #plt.xlabel("Accuracy (%)")
+    #plt.ylabel("Counts/Bin")
+    #plt.title("Test Set Accuracy")
+    #test_plot.show()
 
     
 
-    input()
+    #input()
 
 if __name__ == '__main__':
     main()
