@@ -5,6 +5,13 @@ from math import log2
 from statistics import stdev
 import matplotlib.pyplot as plt
 
+# stopping criteria, can pick one or combine
+    # minimal_size_for_split_criterion : data set < n instances, pick n empirically
+    # minimal_gain_criterion : stop splitting once info gain is too low, pick threshold empirically
+    # maximal_depth_stopping_criterion : stop when some max depth is reached, pick depth empirically
+
+# stopping criteria arg->just use strings for clarity like split_metric?
+
 class decision_tree:
     # data - The dataset passed in to create further nodes with
     # depth - recursive depth in terms of '\t' characters, used for debugging purposes
@@ -212,7 +219,7 @@ def gini_criterion(labels):
     return 1 - accum
 
 # read in the data from the csv and randomly split into training (80%) and test (20%) sets, return these sets
-def prepare_data():
+def prepare_data(file_name: str):
     # load in data
     data_set = [] # entire dataset, as read in from the csv
     training_set = [] # training set partition of the entire data set
@@ -221,7 +228,7 @@ def prepare_data():
     num_attr = 0
     num_entries = 0
 
-    with open('house_votes_84.csv', encoding="utf-8") as raw_data_file:
+    with open(file_name, encoding="utf-8") as raw_data_file:
         data_reader = csv.reader(raw_data_file)
         data_set = list(data_reader)
     
