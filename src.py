@@ -24,7 +24,7 @@ def main():
     #for fold in k_folds:
     #    print(f"New fold: {fold}\n\n")
 
-    k_folds, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
+    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
     print('hw3_house_votes_84.csv')
     for fold in k_folds:
         #print(f"New fold: {fold}\n\n")
@@ -42,7 +42,7 @@ def main():
     #print('hw3_cancer.csv')
     #for fold in k_folds:
     #    print(f"New fold: {fold}\n\n")
-    forest = random_forest.random_forest(data, 10)
+    forest = random_forest.random_forest(data, 10, attr_type)
     forest.recur_print()
 
     num_correct = 0

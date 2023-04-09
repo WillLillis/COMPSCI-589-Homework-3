@@ -18,7 +18,7 @@ class decision_tree:
     #           the initial call, false for the other calls
     # classification - has argument passed in only when the caller is passing it an 
     #                  empty data set, indicates what classification (0 or 1 in the case) to make the resulting leaf node
-    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
+    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_type: list, attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
         self.children = []
         if is_root == True:
             self.attr_val = None 
@@ -149,7 +149,7 @@ class decision_tree:
             # make a dictionary once at the start?
         # calculate dataset majority in case of empty partition
         # hardcoded '3' here is a little dumb, could make this more dynamic
-        for i in range(3):
+        for i in range(len(attr_vals)):
             if len(child_data[i]) <= 1:
                 num_zero = 0
                 num_one = 0
@@ -161,7 +161,7 @@ class decision_tree:
                 majority = 0 if num_zero >= num_one else 1
                 break
 
-        for i in range(3):
+        for i in range(len(child_data)):
             if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
                 self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_vals, depth=depth + '\t', split_metric=split_metric))
             else:

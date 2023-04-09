@@ -4,7 +4,7 @@ import misc
 
 class random_forest:
     # Add various tree params as forest params...
-    def __init__(self, data: list, num_trees: int, stopping_criteria = "minimal_gain_criterion"):
+    def __init__(self, data: list, num_trees: int, attr_type: list, stopping_criteria = "minimal_gain_criterion"):
         # list containing all trees that are members of the forest
         self.trees = []
         # helper dictionary to translate between category labels and (column) indices
@@ -27,7 +27,7 @@ class random_forest:
 
         for _ in range(num_trees):
             tree_data = misc.bootstrap(data)
-            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None, stopping_criteria, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
+            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None, stopping_criteria, attr_type, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
 
     def classify_instance(self, instance: list):
         votes = {}

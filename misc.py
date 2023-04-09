@@ -27,6 +27,11 @@ def k_folds_gen(k: int, file_name: str):
         # pass training data in to train random forest
         # evaluate on fold i
 
+    # create numeric/ categorical attribute list on load time
+
+    # True for numeric, False for categorical
+    attr_type = list()
+
     with open(file_name, encoding="utf-8") as raw_data_file:
         # the data files all follow different labeling conventions and/or use different delimiters...
         # could make this more general, but here we'll more or less hardcode in the correct procedure for
@@ -37,12 +42,16 @@ def k_folds_gen(k: int, file_name: str):
             for i in range(1, len(data_set)):
                 for j in range(len(data_set[i])):
                     data_set[i][j] = int(float(data_set[i][j]))
+            for _ in range(len(data_set[0]) - 1):
+                attr_type.append(True)
         elif 'hw3_house_votes_84.csv' in file_name:
             data_reader = csv.reader(raw_data_file)
             data_set = list(data_reader)
             for i in range(1, len(data_set)):
                 for j in range(len(data_set[i])):
                     data_set[i][j] = int(data_set[i][j])
+            for _ in range(len(data_set[0]) - 1):
+                attr_type.append(False)
         elif 'hw3_wine.csv' in file_name:
             data_reader = csv.reader(raw_data_file, delimiter='\t')
             data_set = list(data_reader)
@@ -55,6 +64,8 @@ def k_folds_gen(k: int, file_name: str):
             for entry in data_set:
                 tmp = entry.pop(0)
                 entry.append(tmp)
+            for _ in range(len(data_set[0]) - 1):
+                attr_type.append(True)
 
     class_partitioned = {}
     for i in range(1, len(data_set)):
@@ -128,7 +139,7 @@ def k_folds_gen(k: int, file_name: str):
     else:
         print("ERROR!!!!!!!")
 
-    return k_folds, deepcopy(data_set[0])
+    return k_folds, attr_type, deepcopy(data_set[0])
 
     # populate the folds according to the original data set's class proportions
     # ok to do this in a randomized fashion?
