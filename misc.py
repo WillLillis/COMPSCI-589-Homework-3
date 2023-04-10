@@ -79,16 +79,6 @@ def k_folds_gen(k: int, file_name: str):
     class_proportions = {}
     for item in class_partitioned:
         class_proportions[item] = len(class_partitioned[item]) / (len(data_set) - 1)
-    
-
-    #for entry in class_partitioned:
-    #    print(len(class_partitioned[entry]))
-    #for entry in class_proportions:
-    #    print(class_proportions[entry])
-    #for entry in class_partitioned:
-    #    print(len(class_partitioned[entry]))
-    #print(class_proportions)
-    
 
     # create list of lists to hold our k folds
     k_folds = []

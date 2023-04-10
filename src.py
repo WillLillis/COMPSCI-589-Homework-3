@@ -19,11 +19,6 @@ from misc import k_folds_gen
 
 
 def main():
-    #k_folds = k_folds_gen(10, 'hw3_wine.csv')
-    #print('hw3_wine.csv')
-    #for fold in k_folds:
-    #    print(f"New fold: {fold}\n\n")
-
     k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
     print('hw3_house_votes_84.csv')
     for fold in k_folds:
@@ -37,11 +32,7 @@ def main():
     # slap the labels back onto the top of the k_folds list of lists
     data.insert(0, data_labels)
     #print(data)
-    
-    #k_folds = k_folds_gen(10, 'hw3_cancer.csv')
-    #print('hw3_cancer.csv')
-    #for fold in k_folds:
-    #    print(f"New fold: {fold}\n\n")
+
     forest = random_forest.random_forest(data, 10, attr_type)
     forest.recur_print()
 
@@ -56,6 +47,8 @@ def main():
         else:
             print("Failure!")
     print(f"Score: {num_correct / num}")
+
+    print(f"attr_type: {attr_type}")
 
 if __name__ == "__main__":
     main()

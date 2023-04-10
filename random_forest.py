@@ -23,11 +23,10 @@ class random_forest:
                 if data[index][self.cat_to_attr_index[attr]] not in self.attr_vals[attr]:
                     self.attr_vals[attr].append(data[index][self.cat_to_attr_index[attr]])
 
-        print(f"attr_vals: {self.attr_vals}")
-
         for _ in range(num_trees):
             tree_data = misc.bootstrap(data)
-            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None, stopping_criteria, attr_type, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
+            self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None,\
+               stopping_criteria, attr_type, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
 
     def classify_instance(self, instance: list):
         votes = {}

@@ -149,7 +149,7 @@ class decision_tree:
             # make a dictionary once at the start?
         # calculate dataset majority in case of empty partition
         # hardcoded '3' here is a little dumb, could make this more dynamic
-        for i in range(len(attr_vals)):
+        for i in range(len(attr_vals[split_attr])):
             if len(child_data[i]) <= 1:
                 num_zero = 0
                 num_one = 0
@@ -163,9 +163,9 @@ class decision_tree:
 
         for i in range(len(child_data)):
             if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
-                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_vals, depth=depth + '\t', split_metric=split_metric))
+                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_type, attr_vals, depth=depth + '\t', split_metric=split_metric))
             else:
-                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
+                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_type, attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
     
     # for debugging, conducts a DFS of the tree, printing out its attributes
     def recursive_print(self, depth=''):
