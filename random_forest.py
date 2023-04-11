@@ -10,6 +10,7 @@ class random_forest:
         self.cat_to_attr_index = {}
         for index in range(len(data[0])):
             self.cat_to_attr_index[data[0][index]] = index
+            #self.cat_to_attr_index[str(index)] = index # BUGBUG maybe this'll fix our KeyError's
 
         # helper 2-D list to hold all possible values for given categorical attributes
         self.attr_vals = {}
