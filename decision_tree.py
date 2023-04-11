@@ -7,10 +7,9 @@ from statistics import stdev
 #import matplotlib.pyplot as plt
 from math import sqrt
 
-# stopping criteria, can pick one or combine
-    # minimal_size_for_split_criterion : data set < n instances, pick n empirically
-    # minimal_gain_criterion : stop splitting once info gain is too low, pick threshold empirically
-    # maximal_depth_stopping_criterion : stop when some max depth is reached, pick depth empirically
+# Need to continue work for numerical attributes...
+# Next on the list is how to store that information in the tree's nodes correctly
+
 class decision_tree:
     # data - The dataset passed in to create further nodes with
     # depth - recursive depth in terms of '\t' characters, used for debugging purposes
@@ -18,7 +17,8 @@ class decision_tree:
     #           the initial call, false for the other calls
     # classification - has argument passed in only when the caller is passing it an 
     #                  empty data set, indicates what classification (0 or 1 in the case) to make the resulting leaf node
-    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_type: list, attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
+    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_type: list, \
+        attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
         self.children = []
         if is_root == True:
             self.attr_val = None 
@@ -55,16 +55,12 @@ class decision_tree:
 
              # get random subset of dataset's attributes
              attributes = get_rand_cats(deepcopy(data[0]))
-             #print(f"Random attributes: {attributes}")
-             for attr in attributes:
-                 partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
-                 info_gains[attr] = info_gain(data_set_only_labels, partitions) 
-             # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
-             #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
-             #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
-             #    info_gains[data[0][attr_index]] = info_gain(data_set_only_labels, partitions) 
-             #    #print(f'{depth}information gain of split based off of {data[0][attr_index]} is {info_gains[data[0][attr_index]]}')
-             # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
+             for i in range(len(attributes)):
+                 if attr_type[i] == True: # if it's a numerical attribute...
+                     partitions = partition_data_numerical(data, attributes[i], attr_vals) # paritition 'data' according to the current attribute 'attr'
+                 else: # otherwise it's categorical
+                     partitions = partition_data_categorical(data, attributes[i], attr_vals) # paritition 'data' according to the current attribute 'attr'
+                 info_gains[attributes[i]] = info_gain(data_set_only_labels, partitions) 
              split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
              if info_gains[split_attr] < thresh:
                 self.is_leaf = True
@@ -84,13 +80,7 @@ class decision_tree:
                 self.is_leaf = False
         else:
             print(f"Error! Invalid stopping criteria argument provided! ({stopping_criteria})")
-        
 
-        # if it doesn't meet the stopping criteria...
-        #print(f'{depth}Stopping crieria not met! Continuing...')
-        
-
-        
         # find best attribute to split off of based off of Information Gain/ Gini Metric
         if split_metric == "Info_Gain":
             # if we're using minimal gain as our stopping criteria, everything should already be calculated!
@@ -106,14 +96,12 @@ class decision_tree:
                 # get random subset of dataset's attributes
                 attributes = get_rand_cats(deepcopy(data[0]))
                 for attr in attributes:
-                    partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
-                    info_gains[attr] = info_gain(data_set_only_labels, partitions) 
-                # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
-                #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
-                #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
-                #    info_gains[data[0][attr_index]] = info_gain(data_set_only_labels, partitions) 
-                #    #print(f'{depth}information gain of split based off of {data[0][attr_index]} is {info_gains[data[0][attr_index]]}')
-                # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
+                    for i in range(len(attributes)):
+                     if attr_type[i] == True: # if it's a numerical attribute...
+                         partitions = partition_data_numerical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+                     else: # otherwise it's categorical
+                         partitions = partition_data_categorical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+                     info_gains[attr] = info_gain(data_set_only_labels, partitions)
                 split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
                 #print(f'{depth}Splitting based off of attribute {split_attr}, gain: {info_gains[split_attr]}')
         elif split_metric == "Gini":
@@ -125,41 +113,49 @@ class decision_tree:
             # get random subset of dataset's attributes
             attributes = get_rand_cats(deepcopy(data[0]))
             for attr in attributes:
-                partitions = partition_data(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
-            # vvvvvv OLD CODE, ALL ATTRIBUTES CONSIDERED vvvvvv
-            #for attr_index in range(len(data[0]) - 1): # -1 there to skip the 'target' attribute
-            #    partitions = partition_data(data, data[0][attr_index]) # paritition 'data' according to the current attribute 'attr'
-            #    ginis[data[0][attr_index]] = 0
-            #    for partition in partitions:
-            #        ginis[data[0][attr_index]] += (len(partition) / len(data)) * gini_criterion(partition)
-            #    #print(f'{depth}gini criterion of split based off of {data[0][attr_index]} is {ginis[data[0][attr_index]]}')
-            # ^^^^^ OLD CODE, ALL ATTRIBUTES CONSIDERED ^^^^^
+                partitions = partition_data_categorical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
             split_attr = min(ginis, key = ginis.get)
         else:
             print("ERROR: Invalid split metric supplied!")
             return
         
-        #BUGBUG somehow split_attr is None here
         self.node_attr = split_attr
         # partition data based off of split_attr
-        child_data = partition_data(data, split_attr, attr_vals, labels_only=False)
-
-        #BUGUBUG remove hardcoded '3'
-            # figuring out possible number of values for an attribute at runtime
-            # make a dictionary once at the start?
-        # calculate dataset majority in case of empty partition
-        # hardcoded '3' here is a little dumb, could make this more dynamic
-        for i in range(len(attr_vals[split_attr])):
-            if len(child_data[i]) <= 1:
-                num_zero = 0
-                num_one = 0
-                for instance in data:
-                    if instance[-1] == 0:
-                        num_zero +=  1
-                    else:
-                        num_one += 1
-                majority = 0 if num_zero >= num_one else 1
+        if attr_type[i] == True: # if it's a numerical attribute...
+            child_data = partition_data_numerical(data, split_attr, attr_vals, labels_only=False) # paritition 'data' according to the current attribute 'attr'
+        else: # otherwise it's categorical
+            child_data = partition_data_categorical(data, split_attr, attr_vals, labels_only=False) # paritition 'data' according to the current attribute 'attr'
+        
+        # translate split_attr to an index in attr_type
+        for i in range(len(attr_type)):
+            if data[0][i] == split_attr:
+                split_attr_index = i
                 break
+
+        if attr_type[split_attr_index] == True: # if it's numerical...
+            for i in range(2): # with numerical attributes there's always 2 partitions
+                if len(child_data[i]) <= 1:
+                    num_zero = 0
+                    num_one = 0
+                    for instance in data:
+                        if instance[-1] == 0:
+                            num_zero +=  1
+                        else:
+                            num_one += 1
+                    majority = 0 if num_zero >= num_one else 1
+                    break
+        else: # otherwise it's categorical
+            for i in range(len(attr_vals[split_attr])):
+                if len(child_data[i]) <= 1:
+                    num_zero = 0
+                    num_one = 0
+                    for instance in data:
+                        if instance[-1] == 0:
+                            num_zero +=  1
+                        else:
+                            num_one += 1
+                    majority = 0 if num_zero >= num_one else 1
+                    break
 
         for i in range(len(child_data)):
             if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
@@ -187,17 +183,14 @@ class decision_tree:
                     return child.classify_instance(instance, attr_to_index)
             else:
                 print(f'BAD ATTRIBUTE LABEL! ({self.node_attr})')
-                return "Error: Bad attribute label used for split"
+                return None
 
 # partition dataset 'data' based off of attribute 'attr'
 # if labels_only=True-> returns partitions ONLY WITH CLASS LABELS (0's and 1's, that's it)
 # if labels_only=False-> returns the partitions with entire rows from data set copied in
     # in this case, each partition gets a row of attribute labels at the top
 # pass in attr to index dict?
-def partition_data(data, attr, attr_vals: dict, labels_only=True):
-    #print(f"attr: {attr}")
-    #print(f"len(attr_vals[attr]): {len(attr_vals[attr])}")
-    
+def partition_data_categorical(data, attr, attr_vals: dict, labels_only=True)->list: 
     partitions = [] # creating multi-dimensional arrays in python is weird...
     for i in range(len(attr_vals[attr])):
         partitions.append([])
@@ -221,6 +214,39 @@ def partition_data(data, attr, attr_vals: dict, labels_only=True):
             partitions[data[i][attr_index]].append(deepcopy(data[i]))
 
     return partitions
+
+def partition_data_numerical(data, attr, attr_vals: dict, labels_only=True)->list:
+    # always split to two classes based on threshold with numerical attributes...
+    partitions = []
+    partitions.append([]) # <= partition
+    partitions.append([]) # > partition
+
+    # for now we'll just use the "average" approach, will go back and try out the in between approach later
+    for i in range(len(data[0])):
+        if data[0][i] == attr:
+            attr_index = i
+            break
+    # grab the average value....
+    avg = 0
+    for i in range(1, len(data)): # skip the first row
+        avg += data[i][attr_index]
+    avg /= (len(data) - 1) # could check before we potentially divide by 0....
+
+    if labels_only == True:
+        for i in range(1, len(data)): # skip the first row
+            if data[i][attr_index] <= avg:
+                partitions[0].append(deepcopy(data[i][-1]))
+            else:
+                partitions[1].append(deepcopy(data[i][-1]))
+    else:
+        for i in range(1, len(data)): # skip the first row
+            if data[i][attr_index] <= avg:
+                partitions[0].append(deepcopy(data[i]))
+            else:
+                partitions[1].append(deepcopy(data[i]))
+
+    return partitions
+
 
 # only pass in class labels
 def entropy(data_set):

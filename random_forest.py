@@ -3,7 +3,6 @@ import decision_tree
 import misc
 
 class random_forest:
-    # Add various tree params as forest params...
     def __init__(self, data: list, num_trees: int, attr_type: list, stopping_criteria = "minimal_gain_criterion"):
         # list containing all trees that are members of the forest
         self.trees = []
