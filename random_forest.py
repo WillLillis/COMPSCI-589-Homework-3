@@ -3,7 +3,7 @@ import decision_tree
 import misc
 
 class random_forest:
-    def __init__(self, data: list, num_trees: int, attr_type: list, stopping_criteria = "minimal_gain_criterion"):
+    def __init__(self, data: list, num_trees: int, attr_type: list, attr_labels: list, stopping_criteria = "minimal_gain_criterion"):
         # list containing all trees that are members of the forest
         self.trees = []
         # helper dictionary to translate between category labels and (column) indices
@@ -25,13 +25,13 @@ class random_forest:
         for _ in range(num_trees):
             tree_data = misc.bootstrap(data)
             self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None,\
-               stopping_criteria, attr_type, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
+               stopping_criteria, attr_type, attr_labels, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
 
-    def classify_instance(self, instance: list):
+    def classify_instance(self, instance: list, attr_type):
         votes = {}
         # collect the votes from all of the member trees
         for worker in self.trees: 
-            vote = worker.classify_instance(instance, self.cat_to_attr_index)
+            vote = worker.classify_instance(instance, self.cat_to_attr_index, attr_type)
             if vote in votes:
                 votes[vote] += 1
             else:

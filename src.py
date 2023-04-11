@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random_forest
 from decision_tree import prepare_data
 from misc import bootstrap
@@ -33,6 +34,7 @@ def main():
     #data.insert(0, data_labels)
     ##print(data)
     k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
+    
     print('hw3_wine.csv')
     for fold in k_folds:
         #print(f"New fold: {fold}\n\n")
@@ -44,9 +46,13 @@ def main():
     
     # slap the labels back onto the top of the k_folds list of lists
     data.insert(0, data_labels)
-    #print(data)
+    data_labels_num = deepcopy(data_labels)
+    for i in range(len(data_labels_num) - 1):
+        data_labels_num[i] = int(data_labels_num[i])
 
-    forest = random_forest.random_forest(data, 10, attr_type)
+    #print(data)
+    #BUGBUG check how data_labels behaves with the different data sets
+    forest = random_forest.random_forest(data, 10, attr_type, data_labels_num)
     forest.recur_print()
 
     num_correct = 0
@@ -54,7 +60,8 @@ def main():
     for entry in k_folds[0]:
         #print(f"class: {entry[-1]}")
         num += 1
-        if forest.classify_instance(entry) == entry[-1]:
+        #BUGBUG need to pass attr_to_index here
+        if forest.classify_instance(entry, attr_type) == entry[-1]:
             print("Great success!")
             num_correct += 1
         else:

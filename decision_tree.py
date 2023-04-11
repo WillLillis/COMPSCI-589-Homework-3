@@ -9,6 +9,12 @@ from math import sqrt
 
 # Need to continue work for numerical attributes...
 # Next on the list is how to store that information in the tree's nodes correctly
+    # Good way to do this?
+    # Turn self.attr_val into a dict?
+        # "type" indicates "categorical" or "numerical"
+        # "value" holds:
+            # if categorical, just hold the value
+            # if numerical, hold 'leq' or 'geq'
 
 class decision_tree:
     # data - The dataset passed in to create further nodes with
@@ -17,9 +23,10 @@ class decision_tree:
     #           the initial call, false for the other calls
     # classification - has argument passed in only when the caller is passing it an 
     #                  empty data set, indicates what classification (0 or 1 in the case) to make the resulting leaf node
-    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_type: list, \
+    def __init__(self, data: list, attr_val, stopping_criteria: str, attr_type: list, attr_labels: list, \
         attr_vals: dict, depth = '', is_root = False, classification = None, split_metric="Info_Gain"):
         self.children = []
+        self.threshold = None # holds threshold if we end up splitting based off of a numerical attribute
         if is_root == True:
             self.attr_val = None 
         else:
@@ -54,14 +61,19 @@ class decision_tree:
                  data_set_only_labels.append(deepcopy(data[index][-1]))
 
              # get random subset of dataset's attributes
-             attributes = get_rand_cats(deepcopy(data[0]))
+             # BUGBUG get_rand_cats is returning garbage
+             attributes = get_rand_cats(deepcopy(attr_labels))
+             print(f"ATTRIBUTES: {attributes}")
              for i in range(len(attributes)):
                  if attr_type[i] == True: # if it's a numerical attribute...
-                     partitions = partition_data_numerical(data, attributes[i], attr_vals) # paritition 'data' according to the current attribute 'attr'
+                     partitions, _ = partition_data_numerical(data, attributes[i], attr_labels) # paritition 'data' according to the current attribute 'attr'
                  else: # otherwise it's categorical
                      partitions = partition_data_categorical(data, attributes[i], attr_vals) # paritition 'data' according to the current attribute 'attr'
+                 #BUGBUG info_gains getting assigned float values here!!!!
                  info_gains[attributes[i]] = info_gain(data_set_only_labels, partitions) 
              split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
+             print(f"LOOK HERE!!!Split attr: {split_attr}")
+             print(f"info_gains: {info_gains}")
              if info_gains[split_attr] < thresh:
                 self.is_leaf = True
                 self.node_attr = None
@@ -69,6 +81,7 @@ class decision_tree:
                 return
              else:
                 self.is_leaf = False
+                self.node_attr = split_attr
         elif stopping_criteria == "maximal_depth_stopping_criterion":
             thresh = 10
             if len(depth) >= thresh:
@@ -94,11 +107,10 @@ class decision_tree:
                     data_set_only_labels.append(deepcopy(data[index][-1]))
 
                 # get random subset of dataset's attributes
-                attributes = get_rand_cats(deepcopy(data[0]))
+                attributes = get_rand_cats(deepcopy(attr_labels))
                 for attr in attributes:
-                    for i in range(len(attributes)):
-                     if attr_type[i] == True: # if it's a numerical attribute...
-                         partitions = partition_data_numerical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
+                     if attr_type[attr] == True: # if it's a numerical attribute...
+                         partitions, _ = partition_data_numerical(data, attr, attr_labels) # paritition 'data' according to the current attribute 'attr'
                      else: # otherwise it's categorical
                          partitions = partition_data_categorical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
                      info_gains[attr] = info_gain(data_set_only_labels, partitions)
@@ -111,7 +123,7 @@ class decision_tree:
                 data_set_only_labels.append(deepcopy(data[index][-1]))
 
             # get random subset of dataset's attributes
-            attributes = get_rand_cats(deepcopy(data[0]))
+            attributes = get_rand_cats(deepcopy(attr_labels))
             for attr in attributes:
                 partitions = partition_data_categorical(data, attr, attr_vals) # paritition 'data' according to the current attribute 'attr'
             split_attr = min(ginis, key = ginis.get)
@@ -119,20 +131,23 @@ class decision_tree:
             print("ERROR: Invalid split metric supplied!")
             return
         
+        #BUGBUG split_attr got a float value somehow?
         self.node_attr = split_attr
         # partition data based off of split_attr
         if attr_type[i] == True: # if it's a numerical attribute...
-            child_data = partition_data_numerical(data, split_attr, attr_vals, labels_only=False) # paritition 'data' according to the current attribute 'attr'
+            child_data, self.threshold = partition_data_numerical(data, split_attr, attr_labels, labels_only=False) # paritition 'data' according to the current attribute 'attr'
         else: # otherwise it's categorical
             child_data = partition_data_categorical(data, split_attr, attr_vals, labels_only=False) # paritition 'data' according to the current attribute 'attr'
         
-        # translate split_attr to an index in attr_type
+        # translate split_attr to an index in attr_type for if block below...
+        #BUGBUG Don't have access to data labels via data[0]
         for i in range(len(attr_type)):
-            if data[0][i] == split_attr:
+            if attr_labels[i] == split_attr:
                 split_attr_index = i
                 break
 
         if attr_type[split_attr_index] == True: # if it's numerical...
+            # BUGBUG need to redo this for numerical attributes!
             for i in range(2): # with numerical attributes there's always 2 partitions
                 if len(child_data[i]) <= 1:
                     num_zero = 0
@@ -156,12 +171,38 @@ class decision_tree:
                             num_one += 1
                     majority = 0 if num_zero >= num_one else 1
                     break
-
-        for i in range(len(child_data)):
-            if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
-                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_type, attr_vals, depth=depth + '\t', split_metric=split_metric))
+        # BUGBUG fix this for numerical attributes, probably need a completely separate section
+        if attr_type[split_attr_index] == True: # if it's numerical...
+            # create dictionary self.attr_val here 
+            # could be smarter about this, but I'm just going to hard code it...
+            tmp_attr_val = {}
+            tmp_attr_val["type"] = "numerical"
+            tmp_attr_val["value"] = "leq" # less than or equal to partition
+            if len(child_data[0]) > 1:
+                self.children.append(decision_tree(child_data[0], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                    attr_vals, depth=depth + '\t', split_metric=split_metric))
             else:
-                self.children.append(decision_tree(child_data[i], i, stopping_criteria, attr_type, attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
+                self.children.append(decision_tree(child_data[0], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                    attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
+            tmp_attr_val["value"] = "g" # greater than partition
+            if len(child_data[1]) > 1:
+                self.children.append(decision_tree(child_data[1], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                    attr_vals, depth=depth + '\t', split_metric=split_metric))
+            else:
+                self.children.append(decision_tree(child_data[1], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                    attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
+        else: # otherwise it's categorical
+            # Need to support dictionaries here...
+            tmp_attr_val = {}
+            tmp_attr_val["type"] = "categorical"
+            for i in range(len(child_data)):
+                tmp_attr_val["value"] = i
+                if len(child_data[i]) > 1:#if len(child_data[i]) != 0: 
+                    self.children.append(decision_tree(child_data[i], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                        attr_vals, depth=depth + '\t', split_metric=split_metric))
+                else:
+                    self.children.append(decision_tree(child_data[i], tmp_attr_val, stopping_criteria, attr_type, attr_labels,\
+                        attr_vals, depth=depth + '\t', classification=majority, split_metric=split_metric))
     
     # for debugging, conducts a DFS of the tree, printing out its attributes
     def recursive_print(self, depth=''):
@@ -173,17 +214,30 @@ class decision_tree:
             child.recursive_print(depth + '\t')
     
     # classifies data 'instance' using the current tree
-    def classify_instance(self, instance, attr_to_index):
+    def classify_instance(self, instance, attr_to_index, attr_type):
+        print("CLASSIFY INSTANCE!")
+        print(f"instance: {instance}")
+        print(f"attr_to_index: {attr_to_index}")
+        print(f"attr_type: {attr_type}")
         if self.is_leaf == True: # base case
             return self.classification
-        for child in self.children:
-            #if child.attr_val == instance[cat_to_index(self.node_attr)]: # get instance's value for the current node's 'self.node_attr'-> has to match in value with one of children
-            if self.node_attr in attr_to_index:
-                if child.attr_val == instance[attr_to_index[self.node_attr]]: # get instance's value for the current node's 'self.node_attr'-> has to match in value with one of children
-                    return child.classify_instance(instance, attr_to_index)
+        print(f"attr_to_index: {attr_to_index}")
+        print(f"self.node_attr: {self.node_attr}")
+        #BUGBUG stringifying self.node_attr fixes the key error but may break other things
+        if attr_type[attr_to_index[str(self.node_attr)]] == True: # if it's numerical...
+            if instance[attr_to_index[str(self.node_attr)]] <= self.threshold:
+                return self.children[0].classify_instance(instance, attr_to_index, attr_type)
             else:
-                print(f'BAD ATTRIBUTE LABEL! ({self.node_attr})')
-                return None
+                return self.children[1].classify_instance(instance, attr_to_index, attr_type)
+        else: # otherwise it's categorical
+            for child in self.children:
+                #if child.attr_val == instance[cat_to_index(self.node_attr)]: # get instance's value for the current node's 'self.node_attr'-> has to match in value with one of children
+                if self.node_attr in attr_to_index:
+                    if child.attr_val == instance[attr_to_index[self.node_attr]]: # get instance's value for the current node's 'self.node_attr'-> has to match in value with one of children
+                        return child.classify_instance(instance, attr_to_index, attr_type)
+                else:
+                    print(f'BAD ATTRIBUTE LABEL! ({self.node_attr})')
+                    return None
 
 # partition dataset 'data' based off of attribute 'attr'
 # if labels_only=True-> returns partitions ONLY WITH CLASS LABELS (0's and 1's, that's it)
@@ -215,15 +269,17 @@ def partition_data_categorical(data, attr, attr_vals: dict, labels_only=True)->l
 
     return partitions
 
-def partition_data_numerical(data, attr, attr_vals: dict, labels_only=True)->list:
+# BUGBUG have this return the average value used for the split????
+def partition_data_numerical(data, attr, attr_labels: list, labels_only=True)->list:
     # always split to two classes based on threshold with numerical attributes...
     partitions = []
     partitions.append([]) # <= partition
     partitions.append([]) # > partition
 
     # for now we'll just use the "average" approach, will go back and try out the in between approach later
-    for i in range(len(data[0])):
-        if data[0][i] == attr:
+    #BUGBUG don't use data[0]
+    for i in range(len(attr_labels) - 1):
+        if attr_labels[i] == attr:
             attr_index = i
             break
     # grab the average value....
@@ -245,7 +301,7 @@ def partition_data_numerical(data, attr, attr_vals: dict, labels_only=True)->lis
             else:
                 partitions[1].append(deepcopy(data[i]))
 
-    return partitions
+    return partitions, avg
 
 
 # only pass in class labels
