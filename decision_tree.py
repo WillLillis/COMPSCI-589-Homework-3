@@ -63,7 +63,7 @@ class decision_tree:
              # get random subset of dataset's attributes
              # BUGBUG get_rand_cats is returning garbage
              attributes = get_rand_cats(deepcopy(attr_labels))
-             print(f"ATTRIBUTES: {attributes}")
+             #print(f"ATTRIBUTES: {attributes}")
              for i in range(len(attributes)):
                  if attr_type[i] == True: # if it's a numerical attribute...
                      partitions, _ = partition_data_numerical(data, attributes[i], attr_labels) # paritition 'data' according to the current attribute 'attr'
@@ -73,8 +73,8 @@ class decision_tree:
                  #BUGBUG info_gains getting assigned float values here!!!!
                  info_gains[attributes[i]] = info_gain(data_set_only_labels, partitions) 
              split_attr = max(info_gains, key = info_gains.get) # get the attribute of maximal gain
-             print(f"LOOK HERE!!!Split attr: {split_attr}")
-             print(f"info_gains: {info_gains}")
+             #print(f"LOOK HERE!!!Split attr: {split_attr}")
+             #print(f"info_gains: {info_gains}")
              if info_gains[split_attr] < thresh:
                 self.is_leaf = True
                 self.node_attr = None
@@ -222,7 +222,7 @@ class decision_tree:
         #print(f"attr_to_index: {attr_to_index}")
         #print(f"attr_type: {attr_type}")
         if self.is_leaf == True: # base case
-            print(f"Base case: returning {self.classification}")
+            #print(f"Base case: returning {self.classification}")
             return self.classification
         #print(f"attr_to_index: {attr_to_index}")
         #print(f"self.node_attr: {self.node_attr}")
@@ -277,15 +277,15 @@ class decision_tree:
                 #if self.node_attr in attr_to_index:
                 # trying out replacing self.node_attr with tmp
                 if tmp in attr_to_index:
-                    new_var = child.attr_val
-                    print(f"If {new_var} == {instance[attr_to_index[tmp]]}")
+                    #new_var = child.attr_val
+                    #print(f"If {new_var} == {instance[attr_to_index[tmp]]}")
                     if child.attr_val == instance[attr_to_index[tmp]]: # get instance's value for the current node's 'self.node_attr'-> has to match in value with one of children
-                        print("Recursing!")
+                        #print("Recursing!")
                         return child.classify_instance(instance, attr_to_index, attr_type)
                 else:
-                    print(f'BAD ATTRIBUTE LABEL! ({self.node_attr}, {tmp})')
+                    #print(f'BAD ATTRIBUTE LABEL! ({self.node_attr}, {tmp})')
                     return None
-            print("GOT HERE")
+            #print("GOT HERE")
 
 # partition dataset 'data' based off of attribute 'attr'
 # if labels_only=True-> returns partitions ONLY WITH CLASS LABELS (0's and 1's, that's it)
@@ -293,10 +293,10 @@ class decision_tree:
     # in this case, each partition gets a row of attribute labels at the top
 # pass in attr to index dict?
 def partition_data_categorical(data, attr, attr_vals: dict, attr_labels: list, labels_only=True)->list: 
-    print("PARTITION!!!!")
-    print(f"attr: {attr}")
-    print(f"attr_vals: {attr_vals}")
-    print(f"attr_labels: {attr_labels}")
+    #print("PARTITION!!!!")
+    #print(f"attr: {attr}")
+    #print(f"attr_vals: {attr_vals}")
+    #print(f"attr_labels: {attr_labels}")
 
     partitions = [] # creating multi-dimensional arrays in python is weird...
     #BUGBUG stringifying attr may break stuff
@@ -434,7 +434,7 @@ def get_rand_cats(cats: list, num_cats_req=0):
 # for simplicity we'll assume the labels occupy the first row, so we'll ignore that
 def get_majority_class(data: list):
     if len(data) < 2:
-        print("ERROR: Bad dataset!")
+        #print("ERROR: Bad dataset!")
         return None
     counts = {}
     for i in range(1, len(data)):

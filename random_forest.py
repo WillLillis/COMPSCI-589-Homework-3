@@ -15,7 +15,7 @@ class random_forest:
         # helper 2-D list to hold all possible values for given categorical attributes
         self.attr_vals = {}
         for index in range(len(data[0]) - 1): # -1 to avoid copying the "target" attribute
-            print(f"Adding entry to attr_vals: {data[0][index]}")
+            #print(f"Adding entry to attr_vals: {data[0][index]}")
             self.attr_vals[data[0][index]] = list() 
         # iterate through data set and collect all possible values for each attribute
         for attr in self.attr_vals:
@@ -38,7 +38,7 @@ class random_forest:
             else:
                 votes[vote] = 1
         # and return the classification with the most votes
-        print(f"votes: {votes}")
+        #print(f"votes: {votes}")
         return max(votes, key = votes.get)
 
     def recur_print(self, tree_index=-1):

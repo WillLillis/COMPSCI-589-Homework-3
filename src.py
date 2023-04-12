@@ -18,31 +18,31 @@ from misc import k_folds_gen
         #     ->bool (indicating numeric or not)
         # if numberic is True, list should empty!
 
-
+# general testing purposes
 def main():
-    #k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
-    #print('hw3_house_votes_84.csv')
-    #for fold in k_folds:
-    #    #print(f"New fold: {fold}\n\n")
-    #    pass
-
-    #data = k_folds[1]
-    #for i in range(2, len(k_folds)):
-    #    data += k_folds[i]
-    
-    ## slap the labels back onto the top of the k_folds list of lists
-    #data.insert(0, data_labels)
-    ##print(data)
-    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
-    
-    print('hw3_wine.csv')
+    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
+    print('hw3_house_votes_84.csv')
     for fold in k_folds:
-        print(f"New fold: Size: {len(fold)}\n\n")
+        #print(f"New fold: {fold}\n\n")
         pass
 
     data = k_folds[1]
     for i in range(2, len(k_folds)):
         data += k_folds[i]
+    
+    # slap the labels back onto the top of the k_folds list of lists
+    data.insert(0, data_labels)
+    #print(data)
+    #k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
+    
+    #print('hw3_wine.csv')
+    #for fold in k_folds:
+    #    print(f"New fold: Size: {len(fold)}\n\n")
+    #    pass
+
+    #data = k_folds[1]
+    #for i in range(2, len(k_folds)):
+    #    data += k_folds[i]
     
     # slap the labels back onto the top of the k_folds list of lists
     # ONLY FOR WINE?
@@ -68,13 +68,79 @@ def main():
         num += 1
         #BUGBUG need to pass attr_to_index here
         if forest.classify_instance(entry, attr_type) == entry[-1]:
-            print("Great success!")
+            #print("Great success!")
             num_correct += 1
         else:
-            print("Failure!")
+            #print("Failure!")
+            pass
     print(f"Score: {num_correct / num}")
 
     print(f"attr_type: {attr_type}")
 
+# wine dataset
+def test_wine():
+    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
+    num_correct = 0
+    num = 0
+    for k in range(10):
+        data = []
+        test_fold = k_folds[k]
+        for index in range(10):
+            if index != k:
+                data += k_folds[index]
+        # slap the labels back onto the top of the k_folds list of lists
+        data.insert(0, data_labels)
+        data_labels_num = deepcopy(data_labels)
+        for i in range(len(data_labels_num) - 1):
+            #data_labels_num[i] = int(data_labels_num[i])
+            data_labels_num[i] = i
+
+        forest = random_forest.random_forest(data, 10, attr_type, data_labels_num)
+
+        
+        for entry in test_fold:
+            num += 1
+            if forest.classify_instance(entry, attr_type) == entry[-1]:
+                #print("Great success!")
+                num_correct += 1
+            else:
+                #print("Failure!")
+                pass
+    print(f"Accuracy: {num_correct / num}")
+
+# house votes data set
+def test_congress():
+    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
+    num_correct = 0
+    num = 0
+    for k in range(10):
+        data = []
+        test_fold = k_folds[k]
+        for index in range(10):
+            if index != k:
+                data += k_folds[index]
+        data.insert(0, data_labels)
+        data_labels_num = deepcopy(data_labels)
+        for i in range(len(data_labels_num) - 1):
+            #data_labels_num[i] = int(data_labels_num[i])
+            data_labels_num[i] = i
+
+        forest = random_forest.random_forest(data, 10, attr_type, data_labels_num)
+
+        
+        for entry in test_fold:
+            num += 1
+            if forest.classify_instance(entry, attr_type) == entry[-1]:
+                #print("Great success!")
+                num_correct += 1
+            else:
+                #print("Failure!")
+                pass
+    print(f"Accuracy: {num_correct / num}")
+
 if __name__ == "__main__":
-    main()
+    #main()
+    print("Wine:")
+    test_wine()
+    print("Congress:")
+    test_congress()
