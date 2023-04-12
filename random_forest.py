@@ -25,8 +25,10 @@ class random_forest:
 
         for _ in range(num_trees):
             tree_data = misc.bootstrap(data)
+            #self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None,\
+            #   stopping_criteria, attr_type, attr_labels, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
             self.trees.append(decision_tree.decision_tree(deepcopy(tree_data), None,\
-               stopping_criteria, attr_type, attr_labels, self.attr_vals, '', is_root=True, split_metric="Info_Gain"))
+               stopping_criteria, attr_type, attr_labels, self.attr_vals, '', is_root=True, split_metric="Gini"))
 
     def classify_instance(self, instance: list, attr_type):
         votes = {}
