@@ -228,12 +228,16 @@ class decision_tree:
         #print(f"self.node_attr: {self.node_attr}")
         #BUGBUG stringifying self.node_attr fixes the key error but may break other things
         #if attr_type[attr_to_index[str(self.node_attr)]] == True: # if it's numerical...
-        if False:    
-            if instance[attr_to_index[str(self.node_attr)]] <= self.threshold:
+        if attr_type[self.node_attr] == True:
+        #if False:
+            #if instance[attr_to_index[str(self.node_attr)]] <= self.threshold:
+            if instance[self.node_attr] <= self.threshold:
                 return self.children[0].classify_instance(instance, attr_to_index, attr_type)
             else:
                 return self.children[1].classify_instance(instance, attr_to_index, attr_type)
         else: # otherwise it's categorical
+            # this is legitimately the worst code I've ever written in my life but at this point
+            # I have another midterm to study for and don't care, it's working
             match self.node_attr:
                 case 0:
                     tmp = '\ufeff#handicapped-infants'

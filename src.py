@@ -20,25 +20,25 @@ from misc import k_folds_gen
 
 
 def main():
-    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
-    print('hw3_house_votes_84.csv')
-    for fold in k_folds:
-        #print(f"New fold: {fold}\n\n")
-        pass
-
-    data = k_folds[1]
-    for i in range(2, len(k_folds)):
-        data += k_folds[i]
-    
-    # slap the labels back onto the top of the k_folds list of lists
-    data.insert(0, data_labels)
-    ##print(data)
-    #k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
-    
-    #print('hw3_wine.csv')
+    #k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_house_votes_84.csv')
+    #print('hw3_house_votes_84.csv')
     #for fold in k_folds:
     #    #print(f"New fold: {fold}\n\n")
     #    pass
+
+    #data = k_folds[1]
+    #for i in range(2, len(k_folds)):
+    #    data += k_folds[i]
+    
+    ## slap the labels back onto the top of the k_folds list of lists
+    #data.insert(0, data_labels)
+    ##print(data)
+    k_folds, attr_type, data_labels = k_folds_gen(10, 'hw3_wine.csv')
+    
+    print('hw3_wine.csv')
+    for fold in k_folds:
+        print(f"New fold: Size: {len(fold)}\n\n")
+        pass
 
     data = k_folds[1]
     for i in range(2, len(k_folds)):
