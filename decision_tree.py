@@ -7,15 +7,6 @@ from statistics import stdev
 #import matplotlib.pyplot as plt
 from math import sqrt
 
-# Need to continue work for numerical attributes...
-# Next on the list is how to store that information in the tree's nodes correctly
-    # Good way to do this?
-    # Turn self.attr_val into a dict?
-        # "type" indicates "categorical" or "numerical"
-        # "value" holds:
-            # if categorical, just hold the value
-            # if numerical, hold 'leq' or 'geq'
-
 class decision_tree:
     # data - The dataset passed in to create further nodes with
     # depth - recursive depth in terms of '\t' characters, used for debugging purposes
@@ -94,6 +85,7 @@ class decision_tree:
                 self.is_leaf = False
         else:
             print(f"Error! Invalid stopping criteria argument provided! ({stopping_criteria})")
+            return 
 
         # find best attribute to split off of based off of Information Gain/ Gini Metric
         if split_metric == "Info_Gain":
