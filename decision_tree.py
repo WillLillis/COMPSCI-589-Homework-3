@@ -118,7 +118,13 @@ class decision_tree:
             # get random subset of dataset's attributes
             attributes = get_rand_cats(deepcopy(attr_labels))
             for attr in attributes:
-                partitions = partition_data_categorical(data, attr, attr_vals, attr_labels) # paritition 'data' according to the current attribute 'attr'
+                ginis[attr] = 0
+                if attr_type[attr] == True:
+                    partitions, _ = partition_data_numerical(data, attr, attr_labels) # paritition 'data' according to the current attribute 'attr'
+                else:
+                    partitions = partition_data_categorical(data, attr, attr_vals, attr_labels) # paritition 'data' according to the current attribute 'attr'
+                for partition in partitions:
+                    ginis[attr] += (len(partition)/ len(data)) * gini_criterion(partition)
             split_attr = min(ginis, key = ginis.get)
         else:
             print("ERROR: Invalid split metric supplied!")

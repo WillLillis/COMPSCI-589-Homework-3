@@ -64,9 +64,7 @@ def main():
     print(f"attr_type: {attr_type}")
 
 # wine dataset
-def test_wine():
-    num_trees = 10
-    num_folds = 10
+def test_wine(num_trees: int, num_folds: int):
     k_folds, attr_type, data_labels = k_folds_gen(num_folds, 'hw3_wine.csv')
     accuracies = []
     precisions = []
@@ -181,9 +179,7 @@ def test_wine():
     print(f"\tAvg F1 Score: {sum(F1s) / len(F1s)}")
 
 # house votes data set
-def test_congress():
-    num_trees = 10
-    num_folds = 10
+def test_congress(num_trees: int, num_folds: int):
     k_folds, attr_type, data_labels = k_folds_gen(num_folds, 'hw3_house_votes_84.csv')
     accuracies = []
     precisions = []
@@ -237,7 +233,5 @@ def test_congress():
 
 if __name__ == "__main__":
     #main()
-    print("Wine:")
-    test_wine()
-    print("Congress:")
-    test_congress()
+    test_wine(50, 5)
+    test_congress(50, 5)
